@@ -48,6 +48,8 @@ bias.append(torch.zeros(1, requires_grad=True))
 for loop in range(1000):
   for i in range(latest_price_list.shape[0]):
     params_sin,params_cos = train(params_sin,params_cos,bias,i+1,latest_price_list[i],learning_rate,kernel_size)
+
+y_list = []
 for itr in range(latest_price_list.shape[0]):
   y = 0
   for i in range(kernel_size):
@@ -55,4 +57,9 @@ for itr in range(latest_price_list.shape[0]):
     params_sin[i] = torch.tensor(params_cos[i],requires_grad=True)
     y += math.sin(2*itr*math.pi/(i+3))*params_sin[i]+math.cos(2*itr*math.pi/(i+3))*params_cos[i]
   y+=bias[0]
-  print(itr,y,latest_price_list[itr])
+  y = y.detach().numpy()
+  y_list.append(y)
+
+with open('./sample_writer_row.csv', 'w') as f:
+    writer = csv.writer(f)
+    writer.writerows(y_list)
