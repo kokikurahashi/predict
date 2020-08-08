@@ -54,4 +54,5 @@ for itr in range(latest_price_list.shape[0]):
     params_cos[i] = torch.tensor(params_sin[i],requires_grad=True)
     params_sin[i] = torch.tensor(params_cos[i],requires_grad=True)
     y += math.sin(2*itr*math.pi/(i+3))*params_sin[i]+math.cos(2*itr*math.pi/(i+3))*params_cos[i]
+  y+=bias[0]
   print(itr,y,latest_price_list[itr])
