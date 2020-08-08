@@ -7,8 +7,8 @@ csv_file = open(filename, "r", encoding="ms932", errors="", newline="" )
 #リスト形式
 f = csv.reader(csv_file, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
 loop = 2
-kernel_size = 10
-learning_rate = 0.001
+kernel_size = 1000
+learning_rate = 0.0001
 
 for itr in range(loop):
   next(f)
@@ -45,7 +45,7 @@ for i in range(kernel_size):
 bias.append(torch.zeros(1, requires_grad=True))
   
 #100回パラメータを学習
-for loop in range(1000):
+for loop in range(200):
   for i in range(latest_price_list.shape[0]):
     params_sin,params_cos = train(params_sin,params_cos,bias,i+1,latest_price_list[i],learning_rate,kernel_size)
 
@@ -60,6 +60,6 @@ for itr in range(latest_price_list.shape[0]):
   y = y.detach().numpy()
   y_list.append(y)
 
-with open('./sample_writer_row.csv', 'w') as f:
+with open('./sample_writ_er_row.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerows(y_list)
