@@ -2,13 +2,14 @@ import csv
 import numpy as np
 import torch
 import math
+import time
 filename = "./7203_2019.csv"
 csv_file = open(filename, "r", encoding="ms932", errors="", newline="" )
 #リスト形式
 f = csv.reader(csv_file, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
 loop = 2
-kernel_size = 1000
-learning_rate = 0.0001
+kernel_size = 10000
+learning_rate = 0.0000001
 
 for itr in range(loop):
   next(f)
@@ -17,49 +18,77 @@ for row in f:
     latest_price_list.append(float(row[4]))
 latest_price_list = np.array(latest_price_list)
 
-
-def train(params_sin,params_cos,bias,date,latest_price,learning_rate,kernel_size):
+import torch
+import torchvision
+from torch import nn
+import csv
+import numpy as np
+import torch
+import math
+import time
+import random
+import torch.nn.functional as F
+class Line(nn.Module):
+    def __init__(self,kernel_size):
+        super(Line, self).__init__()
+        self.layer = nn.ModuleDict({
+                'layer0': nn.Sequential(
+                    nn.Linear(kernel_size*2,1),
+                    ),  
+                })
+    def forward(self, sin,cos):
+        z = torch.cat((sin,cos))
+        for _layer in self.layer.values(): 
+              z = _layer(z)
+        return z
+def train(date,latest_price,learning_rate,kernel_size,theta,model):
   y = 0
-  bias[0] = torch.tensor(bias[0],requires_grad=True)
-  for i in range(kernel_size):
-    params_cos[i] = torch.tensor(params_sin[i],requires_grad=True)
-    params_sin[i] = torch.tensor(params_cos[i],requires_grad=True)
-    y += math.sin(2*date*math.pi/(i+3))*params_sin[i]+math.cos(2*date*math.pi/(i+3))*params_cos[i]
-  y+=bias[0]
-  MSE = ((y - latest_price)**2).mean()
-  with torch.no_grad():
-    MSE.backward()
-  for i in range(kernel_size):
-    params_sin[i] = params_sin[i] - params_sin[i].grad*learning_rate
-    params_cos[i] = params_cos[i] - params_cos[i].grad*learning_rate
-  bias[0] = bias[0] - bias[0].grad*learning_rate
-  return params_sin,params_cos
-
-params_sin = []
-params_cos = []
-bias = []
+  params_L1 = 0
+  theta = theta*date
+  # params_L1 += sum(abs(params_cos)) + sum(abs(params_sin))
+  # t1 = time.time()
+  # for i in range(kernel_size):
+  #   theta [i] = 2*date*math.pi/(i+3)
+  y = model(torch.sin(theta).cuda(0),torch.cos(theta).cuda(0))
+    # y += math.sin(2*date*math.pi/(i+3))*params_sin[i]+math.cos(2*date*math.pi/(i+3))*params_cos[i]
+  # t2 = time.time()
+  # print(0,t2-t1)
+  MSELoss = nn.MSELoss()
+  optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate) 
+  p = torch.zeros(1).cuda(0)
+  p[0] = latest_price
+  MSE = MSELoss(y,p)
+  if date == 200:
+    print(MSE)
+  MSE.backward() # 誤差逆伝播
+  optimizer.step()  # Generatorのパラメータ更新
+  model.zero_grad() 
+  return model
+  # t2 = time.time()
+  # print(1,t2-t1)
+model = Line(kernel_size).cuda(0)
+theta = 2*math.pi*torch.ones(kernel_size)/torch.arange(3,kernel_size+3,1)
+print(theta.shape)
 #パラメータの初期化（最初は全部0）
-for i in range(kernel_size):
-  params_sin.append(torch.zeros(1, requires_grad=True))
-  params_cos.append(torch.zeros(1, requires_grad=True))
-bias.append(torch.zeros(1, requires_grad=True))
+
   
 #100回パラメータを学習
-for loop in range(200):
-  for i in range(latest_price_list.shape[0]):
-    params_sin,params_cos = train(params_sin,params_cos,bias,i+1,latest_price_list[i],learning_rate,kernel_size)
+for loop in range(300):
+  for i in range(latest_price_list.shape[0]-40):
+    theta = 2*math.pi*torch.ones(kernel_size)/torch.arange(3,kernel_size+3,1)
+    model = train(i+1,latest_price_list[i],learning_rate,kernel_size,theta,model)
 
 y_list = []
 for itr in range(latest_price_list.shape[0]):
   y = 0
-  for i in range(kernel_size):
-    params_cos[i] = torch.tensor(params_sin[i],requires_grad=True)
-    params_sin[i] = torch.tensor(params_cos[i],requires_grad=True)
-    y += math.sin(2*itr*math.pi/(i+3))*params_sin[i]+math.cos(2*itr*math.pi/(i+3))*params_cos[i]
-  y+=bias[0]
-  y = y.detach().numpy()
+  theta = 2*math.pi*torch.ones(kernel_size)/torch.arange(3,kernel_size+3,1)
+  theta = theta*date
+  y = model(z = torch.cat((torch.sin(theta),torch.cos(theta))))
+  y = y.cpu().detach().numpy()
   y_list.append(y)
 
-with open('./sample_writ_er_row.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerows(y_list)
+# text_file = open("./drive/My Drive/sample_writ_er_row.csv", "wt")
+for y in y_list:
+      # text_file.write(str(y)+"\n")
+      print(str(y))
+# text_file.close()
