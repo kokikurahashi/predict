@@ -1,5 +1,6 @@
 from torch import nn
 import torch
+
 class curve_model(nn.Module):
     def __init__(self,kernel_size):
         super(curve_model, self).__init__()

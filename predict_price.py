@@ -34,7 +34,7 @@ def train(date,latest_price,learning_rate,kernel_size,theta,model):
 
 #パラメータの初期化（最初は全部0）
 kernel_size = 10000
-learning_rate = 0.0001
+
 model = curve_model(kernel_size).cuda(0)
 theta = 2*math.pi*torch.ones(kernel_size)/torch.arange(3,kernel_size+3,1)
 #100回パラメータを学習
